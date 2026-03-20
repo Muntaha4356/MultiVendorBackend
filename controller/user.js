@@ -186,4 +186,152 @@ userRouter.get("/logout", isAuthenticated, async(req,  res, next)=>{
 })
 
 
+// update user info controller
+userRouter.put("/update-user-info", isAuthenticated, catchAsync(async(req, res, next) => {
+  try {
+    const {email, password, phoneNumber, name } = req.body;
+
+    const user = await User.findOne({email}).select("+password");
+
+    if(!user){
+      return next(new ErrorHandler("User not found", 400));
+
+    }
+
+    const isPasswordValid = await user.comparePassword(password);
+
+    if(!isPasswordValid){
+      return next(
+          new ErrorHandler("Please provide the correct information", 400)
+        );
+    }
+
+    user.name = name;
+    user.email = email;
+    user.phoneNumber = phoneNumber;
+
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      user,
+    })
+
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+  }
+}))
+
+
+// update user avatar
+userRouter.put("/update-avatar", isAuthenticated, catchAsync(async (req, res, next) => {
+  try {
+    let existsUser = await User.findById(req.user.id);
+    if(req.body.avatar !== ""){
+      const imageId = existsUser.avatar.public_id;
+      await cloudinary.v2.uploader.destroy(imageId);
+
+
+      const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+        folder: "avatars",
+        width: 150,
+      })
+
+      existsUser.avatar = {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+      };
+
+      await existsUser.save();
+
+      res.status(200).json({
+        success: true,
+        user:existsUser
+      })
+    }
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+  }
+}));
+
+
+// update user Address 
+userRouter.put(
+  "/update-user-addresses", isAuthenticated, catchAsync(async(req, res, next) => {
+    try {
+      const user = await User.findById(req.user.id);
+
+      const sameTypeAddress = user.addresses.find(
+        (address) => address.addressType === req.body.addressType
+      );
+
+      if (sameTypeAddress) {
+        return next(
+          new ErrorHandler(`${req.body.addressType} address already exists`)
+        );
+      }
+
+      const existsAddress = user.addresses.find(
+        (address) => address._id === req.body._id
+      );
+
+      if (existsAddress) {
+        Object.assign(existsAddress, req.body); // merging the new Adress in existing address
+      } else {
+        // add the new address to the array
+        user.addresses.push(req.body);
+      }
+
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        user,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+
+// delete user address
+userRouter.delete(
+  "/delete-user-address/:id", isAuthenticated,
+  catchAsync(async (req, res, next) => {
+    try {
+      const userId = req.user._id;
+      const addressId = req.params.id;
+
+      await User.updateOne(
+        {
+          _id: userId,
+        },
+        {$pull : {addresses: {_id: addressId}}}
+        
+      );
+      const user = await User.findById(userId);
+      res.status(200).json({ success: true, user });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+)
+
+// find user info with use of userId
+userRouter.get(
+  "/user-info/:id",
+  catchAsync(async(req, res, next) => {
+    try {
+      const user = await User.findById(req.params.id);
+      res.status(201).json({
+        success: true,
+        user
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+)
+
 export default userRouter;
