@@ -334,4 +334,38 @@ userRouter.get(
   })
 )
 
+//UPdate the user password
+
+userRouter.put("/update-user-password", isAuthenticated, 
+  catchAsync(async(req, res, next) => {
+    try {
+      const user = await User.findById(req.user.id).select("+password");
+
+      const isPasswordMatched = await user.comparePassword(
+        req.body.oldPassword
+      );
+
+      if(!isPasswordMatched) {
+        return next(new ErrorHandler("Old Password is incorrect!", 400));
+      }
+
+
+      if (req.body.newPassword !== req.body.confirmPassword) {
+        return next(
+          new ErrorHandler("Password doesn't match" , 400)
+        );
+      }
+      user.password = req.body.newPassword; //it will automatically hash cuz part of the schema
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Password updated successfully!",
+      });
+
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+)
 export default userRouter;
