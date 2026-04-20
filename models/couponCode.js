@@ -23,7 +23,7 @@ const CouponCodeSchema = mongoose.Schema({
         required: true,
     },
     selectedProducts: {
-        type: String, //array of product ids to which the Coupon code can be applied
+        type: [String], //array of product ids to which the Coupon code can be applied
         
     },
     createdAt: {

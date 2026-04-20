@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import sendMail from "../utils/sendMail.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
 import sendToken from "../utils/jwtToken.js";
-import { isAuthenticated, isSellerAuthenticated } from "../middlewares/auth.js";
+import { isAdminAuthenticated, isAuthenticated, isSellerAuthenticated } from "../middlewares/auth.js";
 import fs from "fs";
 import { upload } from "../multer.js"
 import Shop from "../models/shop.js";
@@ -181,6 +181,146 @@ shopRouter.get(
       res.status(201).json({
         success: true,
         shop,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+shopRouter.put(
+  "/update-shop-avatar",
+  isSellerAuthenticated,
+  catchAsync(async (req, res, next) => {
+    try {
+      let existsSeller = await Shop.findById(req.seller._id);
+
+        const imageId = existsSeller.avatar.public_id;
+
+        await cloudinary.v2.uploader.destroy(imageId);
+
+        const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+          folder: "avatars",
+          width: 150,
+        });
+
+        existsSeller.avatar = {
+          public_id: myCloud.public_id,
+          url: myCloud.secure_url,
+        };
+
+  
+      await existsSeller.save();
+
+      res.status(200).json({
+        success: true,
+        seller:existsSeller,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// update seller info
+shopRouter.put(
+  "/update-seller-info",
+  isSellerAuthenticated,
+  catchAsync(async (req, res, next) => {
+    try {
+      const { name, description, address, phoneNumber, zipCode } = req.body;
+
+      const shop = await Shop.findOne(req.seller._id);
+
+      if (!shop) {
+        return next(new ErrorHandler("User not found", 400));
+      }
+
+      shop.name = name;
+      shop.description = description;
+      shop.address = address;
+      shop.phoneNumber = phoneNumber;
+      shop.zipCode = zipCode;
+
+      await shop.save();
+
+      res.status(201).json({
+        success: true,
+        shop,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+
+
+//getting all sellers for admin
+shopRouter.get(
+  "/admin-all-sellers",
+  isAuthenticated,
+  isAdminAuthenticated("Admin"),
+  catchAsync(async (req, res, next) => {
+    try {
+      const sellers = await Shop.find().sort({ createdAt: -1 });
+      res.status(201).json({
+        success: true,
+        sellers,
+      });
+    }
+      catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+      }
+  })
+);
+
+
+shopRouter.delete(
+  "/delete-seller/:id",
+  isAuthenticated,
+  isAdminAuthenticated("Admin"),
+  catchAsync(async (req, res, next) => {
+    try {
+      const seller = await Shop.findById(req.params.id);
+
+      if (!seller) {
+        return next(
+          new ErrorHandler("Seller is not available with this id", 400)
+        );
+      }
+
+      await Shop.findByIdAndDelete(req.params.id);
+
+      res.status(201).json({
+        success: true,
+        message: "Seller deleted successfully!",
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+
+shopRouter.delete(
+  "/delete-withdraw-method/",
+  isSellerAuthenticated,
+  catchAsync(async (req, res, next) => {
+    try {
+      const seller = await Shop.findById(req.seller._id);
+
+      if (!seller) {
+        return next(new ErrorHandler("Seller not found with this id", 400));
+      }
+
+      seller.withdrawMethod = null;
+
+      await seller.save();
+
+      res.status(201).json({
+        success: true,
+        seller,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

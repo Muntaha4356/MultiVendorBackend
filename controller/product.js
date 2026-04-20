@@ -10,6 +10,7 @@ import { isSellerAuthenticated } from '../middlewares/auth.js';
 const productRouter = express.Router();
 
 // create product
+
 productRouter.post(
     '/create-product',
     upload.array("images"),

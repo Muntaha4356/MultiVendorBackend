@@ -8,6 +8,7 @@ import productRouter from './controller/product.js'
 import { errorMiddleware } from './middlewares/error.js';
 import eventRouter from './controller/event.js';
 import couponCodeRouter from './controller/couponCode.js';
+import orderRouter from './controller/order.js';
 const app = express();
 app.use(express.json()) //automatically parse that JSON into a normal JavaScript object and put it in req.body.
 app.use(cookieParser())
@@ -33,7 +34,7 @@ app.use("/api/v2/shop", shopRouter)
 app.use("/api/v2/product", productRouter)
 app.use("/api/v2/event", eventRouter)
 app.use("/api/v2/coupon-code", couponCodeRouter )
-
+app.use("/api/v2/order", orderRouter)
 
 
 app.use(errorMiddleware)

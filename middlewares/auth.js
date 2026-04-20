@@ -34,3 +34,13 @@ export const isSellerAuthenticated = catchAsync(async(req, res,next) => {
     next();
 
 })
+
+//Admin Authentication
+export const isAdminAuthenticated = (...roles) => {
+    return (req, res, next) => {
+        if(!roles.includes(req.user.role)){
+            return next(new ErrorHandler(`${req.user.role} can not access this resources!`))
+        };
+        next();
+    }
+}
