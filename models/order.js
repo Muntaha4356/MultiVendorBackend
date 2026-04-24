@@ -29,7 +29,7 @@ const orderSchema = new mongoose.Schema({
             type: String,
         },
         type:{
-            type: String,
+            type: String, //cod, paypal or stripe 
         },
     },
     paidAt:{
