@@ -6,7 +6,7 @@ import Shop from '../models/shop.js';
 import ErrorHandler from '../utils/ErrorHandler.js';
 import upload from '../utils/multer.js';
 import catchAsync from '../middlewares/catchAsyncError.js';
-import { isSellerAuthenticated } from '../middlewares/auth.js';
+import { isAdminAuthenticated, isAuthenticated, isSellerAuthenticated } from '../middlewares/auth.js';
 const productRouter = express.Router();
 
 // create product
@@ -101,6 +101,78 @@ productRouter.delete("/delete-shop-product/:id", isSellerAuthenticated, catchAsy
         return next(new ErrorHandler(error, 400));
     }
 }))
+
+
+// review of the product
+productRouter.put("/create-new-review", isAuthenticated, catchAsync(async (req, res, next) => {
+    try {
+        const { user, rating, comment, productId, orderId } = req.body;
+        const product = await Product.findById(productId);
+        const review = {
+            user,
+            rating,
+            comment,
+            productId,
+        };
+        const isReviewed = product.reviews.find(
+            (rev) => rev.user._id === req.user._id
+        );
+        if (isReviewed) {
+            product.reviews.forEach((rev) => {
+                if (rev.user._id === req.user._id) {
+                    (rev.rating = rating), (rev.comment = comment), (rev.user = user);
+                }
+            });
+        } else {
+            product.reviews.push(review);
+        }
+        let avg = 0;
+
+        product.reviews.forEach((rev) => {
+            avg += rev.rating;
+        });
+
+        product.ratings = avg / product.reviews.length;
+
+        await product.save({ validateBeforeSave: false });
+
+        await Order.findByIdAndUpdate(
+            orderId,
+            { $set: { "cart.$[elem].isReviewed": true } },
+            { arrayFilters: [{ "elem._id": productId }], new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Reviwed succesfully!",
+        });
+
+    }
+    catch (error) {
+        return next(new ErrorHandler(error, 400));
+    }
+}))
+
+
+//Admin all products
+productRouter.get("/get-all-poducts", isAuthenticated, isAdminAuthenticated("Admin"),
+catchAsync(async(req, res, next) => {
+     try {
+      const products = await Product.find().sort({
+        createdAt: -1,
+      });
+      res.status(201).json({
+        success: true,
+        products,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+})
+)
+
+
+
 
 
 export default productRouter;
