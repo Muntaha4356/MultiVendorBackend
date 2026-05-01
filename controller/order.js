@@ -100,7 +100,7 @@ orderRouter.put(
             }
             if (req.body.status === "Transferred to delivery partner") {
                 order.cart.forEach(async (o) => {
-                    await updateOrder(o._id, o.qty);
+                    await updateOrder(o._id, o.qty); // if sellerclicks on transferredto delivery partner we simply need to update the count of quantity by -1 and sold out items count by +1
                 });
             }
 
@@ -109,7 +109,7 @@ orderRouter.put(
             if (req.body.status === "Delivered") {
                 order.deliveredAt = Date.now();
                 order.paymentInfo.status = "Succeeded";
-                const serviceCharge = order.totalPrice * .10;
+                const serviceCharge = order.totalPrice * .10; // take 10 % rupees for the service charges of platform and rest to the seller
                 await updateSellerInfo(order.totalPrice - serviceCharge);
             }
 
@@ -132,7 +132,7 @@ orderRouter.put(
             async function updateSellerInfo(amount) {
                 const seller = await Shop.findById(req.seller.id);
 
-                seller.availableBalance = amount;
+                seller.availableBalance += amount;
 
                 await seller.save();
             }
@@ -185,10 +185,6 @@ orderRouter.put(
 
             await order.save();
 
-            res.status(200).json({
-                success: true,
-                message: "Order Refund successfull!",
-            });
 
             if (req.body.status === "Refund Success") {
                 order.cart.forEach(async (o) => {
@@ -204,6 +200,11 @@ orderRouter.put(
 
                 await product.save({ validateBeforeSave: false });
             }
+
+            res.status(200).json({
+                success: true,
+                message: "Order Refund successfull!",
+            });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
