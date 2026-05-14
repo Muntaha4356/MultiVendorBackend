@@ -100,7 +100,7 @@ orderRouter.put(
             }
             if (req.body.status === "Transferred to delivery partner") {
                 order.cart.forEach(async (o) => {
-                    await updateOrder(o._id, o.qty); // if sellerclicks on transferredto delivery partner we simply need to update the count of quantity by -1 and sold out items count by +1
+                    await updateStock(o._id, o.qty); // reduce stock when transferred to delivery
                 });
             }
 
@@ -111,6 +111,9 @@ orderRouter.put(
                 order.paymentInfo.status = "Succeeded";
                 const serviceCharge = order.totalPrice * .10; // take 10 % rupees for the service charges of platform and rest to the seller
                 await updateSellerInfo(order.totalPrice - serviceCharge);
+                order.cart.forEach(async (o) => {
+                    await updateSoldOut(o._id, o.qty); // increment sold_out when delivered
+                });
             }
 
             await order.save({ validateBeforeSave: false });
@@ -120,10 +123,17 @@ orderRouter.put(
                 order,
             });
 
-            async function updateOrder(id, qty) {
+            async function updateStock(id, qty) {
                 const product = await Product.findById(id);
 
                 product.stock -= qty;
+
+                await product.save({ validateBeforeSave: false });
+            }
+
+            async function updateSoldOut(id, qty) {
+                const product = await Product.findById(id);
+
                 product.sold_out += qty;
 
                 await product.save({ validateBeforeSave: false });

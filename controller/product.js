@@ -6,6 +6,7 @@ import Shop from '../models/shop.js';
 import ErrorHandler from '../utils/ErrorHandler.js';
 import upload from '../utils/multer.js';
 import catchAsync from '../middlewares/catchAsyncError.js';
+import Order from '../models/order.js';
 import { isAdminAuthenticated, isAuthenticated, isSellerAuthenticated } from '../middlewares/auth.js';
 const productRouter = express.Router();
 
@@ -114,10 +115,10 @@ productRouter.put("/create-new-review", isAuthenticated, catchAsync(async (req, 
             comment,
             productId,
         };
-        const isReviewed = product.reviews.find(
+        const isReviewed = product.reviews.find( // check if user has already reviewed the order
             (rev) => rev.user._id === req.user._id
         );
-        if (isReviewed) {
+        if (isReviewed) { //if they have alreadyreviewed then update the review
             product.reviews.forEach((rev) => {
                 if (rev.user._id === req.user._id) {
                     (rev.rating = rating), (rev.comment = comment), (rev.user = user);
@@ -126,7 +127,7 @@ productRouter.put("/create-new-review", isAuthenticated, catchAsync(async (req, 
         } else {
             product.reviews.push(review);
         }
-        let avg = 0;
+        let avg = 0; // calculate the average rating of the product
 
         product.reviews.forEach((rev) => {
             avg += rev.rating;
@@ -136,7 +137,7 @@ productRouter.put("/create-new-review", isAuthenticated, catchAsync(async (req, 
 
         await product.save({ validateBeforeSave: false });
 
-        await Order.findByIdAndUpdate(
+        await Order.findByIdAndUpdate( // as in order, one of the nested products is reviewed so update the order that the product is reviewed
             orderId,
             { $set: { "cart.$[elem].isReviewed": true } },
             { arrayFilters: [{ "elem._id": productId }], new: true }
@@ -147,7 +148,7 @@ productRouter.put("/create-new-review", isAuthenticated, catchAsync(async (req, 
             message: "Reviwed succesfully!",
         });
 
-    }
+    }  
     catch (error) {
         return next(new ErrorHandler(error, 400));
     }
