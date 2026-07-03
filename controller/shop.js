@@ -7,9 +7,10 @@ import { isAdminAuthenticated, isAuthenticated, isSellerAuthenticated } from "..
 import fs from "fs";
 import { upload } from "../multer.js"
 import Shop from "../models/shop.js";
-import ErrorHandler from "../utils/errorHandler.js";
+import ErrorHandler from "../utils/ErrorHandler.js";
 import path from "path";
 import sendShopToken from "../utils/ShopToken.js";
+import cloudinary from "../utils/cloudinary.js";
 
 const createActivationToken = (seller) => {
   return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
