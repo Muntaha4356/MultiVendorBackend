@@ -185,7 +185,7 @@ orderRouter.put(
 
 // accept the refund ---- seller
 orderRouter.put(
-    "/order-refund-success/:id",
+    "/update-refund-success/:id",
     isSellerAuthenticated,
     catchAsync(async (req, res, next) => {
         try {
