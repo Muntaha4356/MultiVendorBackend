@@ -31,9 +31,7 @@ userRouter.post(
       // null → if deletion succeeded.
       fs.unlink(filePath, (err) => {
         if (err) {
-          console.log(err, "Error deleting duplicate file");
-        } else {
-          console.log("File deleted successfully");
+          console.error("Error deleting duplicate file", err);
         }
       });
       return next(new ErrorHandler("User already exists", 400));
@@ -91,32 +89,27 @@ const createActivationToken = (user) => {
 userRouter.post("/activation", catchAsync(async (req, res, next) => {
   try {
     const { activation_token } = req.body;
-    console.log("activation started");
     const newUser = jwt.verify(activation_token, process.env.ACTIVATION_SECRET);
-    console.log("we verified bruh");
-    console.log("achaaaa lol")
     if (!newUser) {
       return next(new ErrorHandler("Invalid token", 400));
     }
     const { name, email, password, avatar } = newUser;
 
     let user = await User.findOne({ email }).select("+password");;
-    console.log("hey user is trying to find");
     if (user) {
       return next(new ErrorHandler("User already exists", 400));
     }
-    console.log("user was not already found buh");
+
     user = await User.create({
       name,
       email,
       avatar,
       password,
     });
-    console.log("we created user bruh");
+
 
     sendToken(user, 201, res); //File created in utils
   } catch (error) {
-    console.log(error.message);
     return next(new ErrorHandler(error.message, 500));
   }
 }));
@@ -131,14 +124,11 @@ userRouter.post("/login-user", (async (req, res, next) => {
     }
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      console.log("user email not found bruh")
       return next(new ErrorHandler("User doesn't exists!", 400));
     }
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.log("password not matching")
       return next(
-          
           new ErrorHandler("Please provide the correct information", 400)
         );
     }
@@ -154,7 +144,6 @@ userRouter.get("/getuser", isAuthenticated, async(req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     if(!user){
-      console.log("user is not authenticated")
       return next(new ErrorHandler("User is not authenticated", 400));
     }
     res.status(200).json({
@@ -162,7 +151,6 @@ userRouter.get("/getuser", isAuthenticated, async(req, res, next) => {
       user
     })
   } catch (error) {
-    console.log(error.message)
     return next(new ErrorHandler(error.message, 500));
   }
 })
@@ -180,7 +168,6 @@ userRouter.get("/logout", isAuthenticated, async(req,  res, next)=>{
       message:"LOGOUT Successfully"
     })
   } catch (error) {
-    console.log(error.message)
     return next(new ErrorHandler(error.message, 500));
   }
 })

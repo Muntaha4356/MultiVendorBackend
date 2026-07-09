@@ -22,8 +22,6 @@ productRouter.post(
             if (!shop) {
                 return next(new ErrorHandler("Shop not found with this id", 400));
             } else {
-                console.log("Body:", req.body);
-                console.log("Files:", req.files);
                 const files = req.files;
                 const imageUrls = await Promise.all(files.map(file => { return new Promise((resolve, reject) => { cloudinary.v2.uploader.upload_stream({ folder: "products" }, (error, result) => { if (error) reject(error); else resolve(result.secure_url); }).end(file.buffer); }); }));
                 const productData = req.body;

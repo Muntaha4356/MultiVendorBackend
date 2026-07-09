@@ -66,6 +66,19 @@ conversationRouter.get("/get-user-conversation/:id", isAuthenticated, catchAsync
     }
 }));
 
+// get single conversation by id
+conversationRouter.get("/get-conversation/:id", catchAsync(async (req, res, next) => {
+    try {
+        const conversation = await Conversation.findById(req.params.id);
+        if (!conversation) {
+            return next(new ErrorHandler("Conversation not found", 404));
+        }
+        res.status(200).json({ success: true, conversation });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+}));
+
 // get all seller conversations
 conversationRouter.get("/get-all-conversation-seller/:id", catchAsync(async (req, res, next) => {
     try {

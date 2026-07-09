@@ -140,11 +140,15 @@ orderRouter.put(
             }
 
             async function updateSellerInfo(amount) {
-                const seller = await Shop.findById(req.seller.id);
+                // Prefer the seller/shop id from the order's cart items if available
+                const shopId = order.cart && order.cart.length ? order.cart[0].shopId || req.seller._id : req.seller._id;
+                const seller = await Shop.findById(shopId);
+                if (!seller) return;
 
-                seller.availableBalance += amount;
+                seller.availableBalance = (Number(seller.availableBalance) || 0) + Number(amount || 0);
 
                 await seller.save();
+                return seller;
             }
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));

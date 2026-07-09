@@ -28,9 +28,7 @@ shopRouter.post('/create', upload.single("file"), async (req, res, next) => {
       const filePath = `uploads/${filename}`;
       fs.unlink(filePath, (err) => {
         if (err) {
-          console.log(err, "Error deleting duplicate file");
-        } else {
-          console.log("File deleted successfully");
+          console.error("Error deleting duplicate file", err);
         }
       });
       return next(new ErrorHandler ("Shop already exists", 400));
@@ -71,7 +69,6 @@ shopRouter.post('/create', upload.single("file"), async (req, res, next) => {
 
 
   } catch (error) {
-    console.log(error.message);
     return next(new ErrorHandler(error.message, 500));
   }
 });
@@ -103,7 +100,6 @@ shopRouter.post("/activation", catchAsync(async (req, res, next) => {
     sendShopToken(seller, 201, res); //File created in utils
     
   } catch (error) {
-    console.log(error.message);
     return next(new ErrorHandler(error.message, 500));
   }
 }));
@@ -117,19 +113,16 @@ shopRouter.post("/login-shop", (async (req, res, next) => {
     }
     const shop = await Shop.findOne({ email }).select("+password");
     if (!shop) {
-      console.log("shop email not found bruh")
       return next(new ErrorHandler("Shop doesn't exists!", 400));
     }
     const isMatch = await shop.comparePassword(password);
     if (!isMatch) {
-      console.log("password not matching")
       return next(
           new ErrorHandler("Please provide the correct information", 400)
         );
     }
     sendShopToken(shop, 201, res);
   } catch (error) {
-    console.log(error.message);
     return next(new ErrorHandler(error.message, 500));
   }
 }));
@@ -139,7 +132,6 @@ shopRouter.get("/getshop", isSellerAuthenticated, async(req, res, next) => {
   try {
     const seller = await Shop.findById(req.seller._id);
     if(!seller){
-      console.log("Seller is not authenticated")
       return next(new ErrorHandler("Seller is not authenticated", 400));
     }
     res.status(200).json({
@@ -147,7 +139,6 @@ shopRouter.get("/getshop", isSellerAuthenticated, async(req, res, next) => {
       seller
     })
   } catch (error) {
-    console.log(error.message)
     return next(new ErrorHandler(error.message, 500));
   }
 })
@@ -165,7 +156,6 @@ shopRouter.get("/logout", isAuthenticated, async(req,  res, next)=>{
       message:"LOGOUT Successfully"
     })
   } catch (error) {
-    console.log(error.message)
     return next(new ErrorHandler(error.message, 500));
   }
 })

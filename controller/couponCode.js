@@ -16,7 +16,6 @@ couponCodeRouter.post("/create-Coupon-code", isSellerAuthenticated, catchAsync(a
             name: req.body.name
         });
 
-        console.log(isCouponCodeExists, "isCouponCodeExists")
 
         if (isCouponCodeExists) {
             return next(new ErrorHandler("Coupon code already exists with this name", 400));
@@ -80,7 +79,7 @@ couponCodeRouter.get(
   catchAsync(async (req, res, next) => {
     try {
       const couponCode = await CouponCode.findOne({ name: req.params.name });
-      console.log("Cutie patootie")
+
 
       res.status(200).json({
         success: true,

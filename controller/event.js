@@ -22,8 +22,7 @@ eventRouter.post(
             if (!shop) {
                 return next(new ErrorHandler("Shop not found with this id", 400));
             } else {
-                console.log("Body:", req.body);
-                console.log("Files:", req.files);
+
                 const files = req.files;
                 const imageUrls = await Promise.all(files.map(file => { return new Promise((resolve, reject) => { cloudinary.v2.uploader.upload_stream({ folder: "events" }, (error, result) => { if (error) reject(error); else resolve(result.secure_url); }).end(file.buffer); }); }));
                 const eventData = req.body;
@@ -78,7 +77,6 @@ eventRouter.delete("/delete-shop-event/:id", isSellerAuthenticated, catchAsync(a
             return next(new ErrorHandler("Event not found with this id", 500));
         }
         if (!req.file) {
-            console.log("errror is here")
             return next(new ErrorHandler("Avatar is required", 400));
         }
         const filename = req.file.filename;
@@ -86,17 +84,7 @@ eventRouter.delete("/delete-shop-event/:id", isSellerAuthenticated, catchAsync(a
         // fs = File System module in Node.js.
         // Tries to delete the newly uploaded file to avoid orphan files when the user already exists.
 
-        //Tries to delete the newly uploaded file to avoid orphan files when the user already exists.
-        // The callback only ever receives one argument → err.
-        // null → if deletion succeeded.
-        console.log(filePath, "lololololol")
-        // fs.unlink(filePath, (err) => {
-        //     if (err) {
-        //     console.log(err, "Error deleting duplicate file");
-        //     } else {
-        //     console.log("File deleted successfully");
-        //     }
-        // });
+        
         res.status(201).json({
             success: true,
             message: "Event deleted successfully",
