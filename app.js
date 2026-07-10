@@ -24,6 +24,13 @@ app.use(cookieParser());
 
 app.use("/", express.static("uploads"));
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Backend API is running",
+  });
+});
+
 //Parses incoming requests with URL-encoded payloads (e.g., data sent from an HTML form with method="POST").
 // Example: name=Muntaha&age=20 gets turned into { name: "Muntaha", age: "20" } in req.body.
 // config
