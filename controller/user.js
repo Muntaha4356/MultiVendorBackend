@@ -10,7 +10,6 @@ import sendMail from "../utils/sendMail.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
 import sendToken from "../utils/jwtToken.js";
 import { isAuthenticated } from "../middlewares/auth.js";
-import server from "server";
 
 userRouter.post(
   "/create-user",
@@ -31,7 +30,7 @@ userRouter.post(
       // The callback only ever receives one argument → err.
       // null → if deletion succeeded.
       fs.unlink(filePath, (err) => {
-        if (err) {
+        if (err && err.code !== "ENOENT") {
           console.error("Error deleting duplicate file", err);
         }
       });
@@ -52,7 +51,7 @@ userRouter.post(
 
     const activationToken = createActivationToken(user);
 
-    const activationUrl = `${server}/activation/${activationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/activation/${activationToken}`;
     try {
       await sendMail({
         email: user.email,

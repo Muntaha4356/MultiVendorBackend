@@ -11,7 +11,6 @@ import ErrorHandler from "../utils/ErrorHandler.js";
 import path from "path";
 import sendShopToken from "../utils/ShopToken.js";
 import cloudinary from "../utils/cloudinary.js";
-import server from "server";
 
 const createActivationToken = (seller) => {
   return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
@@ -28,7 +27,7 @@ shopRouter.post('/create', upload.single("file"), async (req, res, next) => {
       const filename = req.file.filename;
       const filePath = `uploads/${filename}`;
       fs.unlink(filePath, (err) => {
-        if (err) {
+        if (err && err.code !== "ENOENT") {
           console.error("Error deleting duplicate file", err);
         }
       });
@@ -52,7 +51,7 @@ shopRouter.post('/create', upload.single("file"), async (req, res, next) => {
     };
     const activationToken = createActivationToken(seller);
 
-    const activationUrl = `${server}/shop/activation/${activationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/shop/activation/${activationToken}`;
 
     try {
       await sendMail({
