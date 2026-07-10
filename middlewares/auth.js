@@ -4,9 +4,22 @@ import jwt from "jsonwebtoken"
 import User from "../models/user.js";
 import Shop from "../models/shop.js";
 
+const getToken = (req, cookieName, headerName) => {
+    if (req.cookies[cookieName]) {
+        return req.cookies[cookieName];
+    }
+
+    const headerValue = req.headers[headerName];
+    if (headerValue?.startsWith("Bearer ")) {
+        return headerValue.split(" ")[1];
+    }
+
+    return null;
+};
 
 export const isAuthenticated = catchAsync(async(req, res,next) => {
-    const {token} = req.cookies;
+    const token = getToken(req, "token", "authorization");
+
     if(!token){
         return next(new ErrorHandler("Please Login to continue", 401))
     }
@@ -22,7 +35,8 @@ export const isAuthenticated = catchAsync(async(req, res,next) => {
 
 // Checking for the Seller Authentication
 export const isSellerAuthenticated = catchAsync(async(req, res,next) => {
-    const {seller_token} = req.cookies;
+    const seller_token = getToken(req, "seller_token", "seller-authorization");
+
     if(!seller_token){
         return next(new ErrorHandler("Please Login to continue", 401))
     }

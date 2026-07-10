@@ -9,6 +9,7 @@ import Shop from "../models/shop.js";
 import ErrorHandler from "../utils/ErrorHandler.js";
 import sendShopToken from "../utils/ShopToken.js";
 import cloudinary from "../utils/cloudinary.js";
+import { getClearCookieOptions } from "../utils/cookieOptions.js";
 
 const uploadAvatarToCloudinary = (file) =>
   new Promise((resolve, reject) => {
@@ -153,10 +154,7 @@ shopRouter.get("/getshop", isSellerAuthenticated, async(req, res, next) => {
 //logout shop
 shopRouter.get("/logout", isAuthenticated, async(req,  res, next)=>{
   try {
-    res.cookie("seller_token", null, {
-      expires: new Date(Date.now()),
-      httpOnly: true
-    });
+    res.cookie("seller_token", null, getClearCookieOptions());
     res.status(201).json({
       success: true,
       message:"LOGOUT Successfully"

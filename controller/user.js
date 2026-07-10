@@ -9,6 +9,7 @@ import catchAsync from "../middlewares/catchAsyncError.js";
 import sendToken from "../utils/jwtToken.js";
 import { isAuthenticated } from "../middlewares/auth.js";
 import cloudinary from "../utils/cloudinary.js";
+import { getClearCookieOptions } from "../utils/cookieOptions.js";
 
 const uploadAvatarToCloudinary = (file) =>
   new Promise((resolve, reject) => {
@@ -150,10 +151,7 @@ userRouter.get("/getuser", isAuthenticated, async(req, res, next) => {
 // Logout user
 userRouter.get("/logout", isAuthenticated, async(req,  res, next)=>{
   try {
-    res.cookie("token", null, {
-      expires: new Date(Date.now()),
-      httpOnly: true
-    });
+    res.cookie("token", null, getClearCookieOptions());
     res.status(201).json({
       success: true,
       message:"LOGOUT Successfully"

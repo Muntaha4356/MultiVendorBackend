@@ -13,10 +13,23 @@ import paymentRouter from './controller/payment.js';
 import conversationRouter from './controller/conversation.js';
 import messageRouter from './controller/message.js';
 const app = express();
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://multi-vendor-frontend-hazel.vercel.app",
+    process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-    origin: "https://multi-vendor-frontend-hazel.vercel.app", 
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization", "Seller-Authorization"],
 }));
 
 app.use(express.json()); // automatically parse JSON bodies into req.body
