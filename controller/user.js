@@ -10,6 +10,7 @@ import sendMail from "../utils/sendMail.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
 import sendToken from "../utils/jwtToken.js";
 import { isAuthenticated } from "../middlewares/auth.js";
+import server from "server";
 
 userRouter.post(
   "/create-user",
@@ -51,7 +52,7 @@ userRouter.post(
 
     const activationToken = createActivationToken(user);
 
-    const activationUrl = `http://localhost:5173/activation/${activationToken}`;
+    const activationUrl = `${server}/activation/${activationToken}`;
     try {
       await sendMail({
         email: user.email,

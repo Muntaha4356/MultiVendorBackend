@@ -11,6 +11,7 @@ import ErrorHandler from "../utils/ErrorHandler.js";
 import path from "path";
 import sendShopToken from "../utils/ShopToken.js";
 import cloudinary from "../utils/cloudinary.js";
+import server from "server";
 
 const createActivationToken = (seller) => {
   return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
@@ -51,7 +52,7 @@ shopRouter.post('/create', upload.single("file"), async (req, res, next) => {
     };
     const activationToken = createActivationToken(seller);
 
-    const activationUrl = `http://localhost:5173/shop/activation/${activationToken}`;
+    const activationUrl = `${server}/shop/activation/${activationToken}`;
 
     try {
       await sendMail({
