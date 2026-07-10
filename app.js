@@ -14,7 +14,7 @@ import conversationRouter from './controller/conversation.js';
 import messageRouter from './controller/message.js';
 const app = express();
 app.use(cors({
-  origin: "http://localhost:5173", // frontend origin
+  origin: "https://multi-vendor-frontend-hazel.vercel.app/", // frontend origin
   credentials: true,               // allow cookies
 }));
 
