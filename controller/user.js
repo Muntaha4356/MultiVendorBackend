@@ -1,58 +1,56 @@
 import express from "express";
-import path from "path";
-import { upload } from "../multer.js";
+import upload from "../utils/multer.js";
 import User from "../models/user.js";
 import ErrorHandler from "../utils/ErrorHandler.js";
 const userRouter = express.Router();
-import fs from "fs";
 import jwt from "jsonwebtoken";
 import sendMail from "../utils/sendMail.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
 import sendToken from "../utils/jwtToken.js";
 import { isAuthenticated } from "../middlewares/auth.js";
+import cloudinary from "../utils/cloudinary.js";
+
+const uploadAvatarToCloudinary = (file) =>
+  new Promise((resolve, reject) => {
+    cloudinary.v2.uploader
+      .upload_stream({ folder: "avatars" }, (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      })
+      .end(file.buffer);
+  });
 
 userRouter.post(
   "/create-user",
   upload.single("file"),
   async (req, res, next) => {
-    const { name, email, password } = req.body;
-    const userExist = await User.findOne({ email });
-    if (userExist) {
+    try {
+      const { name, email, password } = req.body;
+
       if (!req.file) {
         return next(new ErrorHandler("Avatar is required", 400));
       }
-      const filename = req.file.filename;
-      const filePath = `uploads/${filename}`; //Builds the local path to where Multer stored it (assuming your disk storage destination is uploads/).
-      // fs = File System module in Node.js.
-      // Tries to delete the newly uploaded file to avoid orphan files when the user already exists.
 
-      //Tries to delete the newly uploaded file to avoid orphan files when the user already exists.
-      // The callback only ever receives one argument → err.
-      // null → if deletion succeeded.
-      fs.unlink(filePath, (err) => {
-        if (err && err.code !== "ENOENT") {
-          console.error("Error deleting duplicate file", err);
-        }
-      });
-      return next(new ErrorHandler("User already exists", 400));
-    }
-    const filename = req.file.filename;
-    const fileUrl = path.join(filename);
+      const userExist = await User.findOne({ email });
+      if (userExist) {
+        return next(new ErrorHandler("User already exists", 400));
+      }
 
-    const user = {
-      name: name,
-      email: email,
-      password: password,
-      avatar: {
-        url: `/uploads/${filename}`, // serve it statically
-        public_id: filename, // or generate unique id
-      },
-    };
+      const avatarUpload = await uploadAvatarToCloudinary(req.file);
 
-    const activationToken = createActivationToken(user);
+      const user = {
+        name: name,
+        email: email,
+        password: password,
+        avatar: {
+          url: avatarUpload.secure_url,
+          public_id: avatarUpload.public_id,
+        },
+      };
 
-    const activationUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/activation/${activationToken}`;
-    try {
+      const activationToken = createActivationToken(user);
+
+      const activationUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/activation/${activationToken}`;
       await sendMail({
         email: user.email,
         subject: "Activate your account",
@@ -63,15 +61,8 @@ userRouter.post(
         message: `please check your email:- ${user.email} to activate your account!`,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
-
-    // const newUser = await User.create(user);
-    // res.status(201).json({
-    //   success: true,
-    //   newUser,
-    // });
-
   }
 );
 

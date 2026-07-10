@@ -4,13 +4,21 @@ import sendMail from "../utils/sendMail.js";
 import catchAsync from "../middlewares/catchAsyncError.js";
 import sendToken from "../utils/jwtToken.js";
 import { isAdminAuthenticated, isAuthenticated, isSellerAuthenticated } from "../middlewares/auth.js";
-import fs from "fs";
-import { upload } from "../multer.js"
+import upload from "../utils/multer.js";
 import Shop from "../models/shop.js";
 import ErrorHandler from "../utils/ErrorHandler.js";
-import path from "path";
 import sendShopToken from "../utils/ShopToken.js";
 import cloudinary from "../utils/cloudinary.js";
+
+const uploadAvatarToCloudinary = (file) =>
+  new Promise((resolve, reject) => {
+    cloudinary.v2.uploader
+      .upload_stream({ folder: "avatars" }, (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      })
+      .end(file.buffer);
+  });
 
 const createActivationToken = (seller) => {
   return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
@@ -22,27 +30,25 @@ const shopRouter = express.Router();
 shopRouter.post('/create', upload.single("file"), async (req, res, next) => {
   try {
     const { name, email, password, address, phoneNumber, zipCode } = req.body;
+
+    if (!req.file) {
+      return next(new ErrorHandler("Avatar is required", 400));
+    }
+
     const emailExist = await Shop.findOne({ email });
     if (emailExist) {
-      const filename = req.file.filename;
-      const filePath = `uploads/${filename}`;
-      fs.unlink(filePath, (err) => {
-        if (err && err.code !== "ENOENT") {
-          console.error("Error deleting duplicate file", err);
-        }
-      });
       return next(new ErrorHandler ("Shop already exists", 400));
     }
-    const filename = req.file.filename;
-    const fileUrl = path.join(filename);
+
+    const avatarUpload = await uploadAvatarToCloudinary(req.file);
 
     const seller = {
       name: name,
       email: email,
       password: password,
       avatar: {
-        url: `/uploads/${filename}`, // serve it statically
-        public_id: filename, // or generate unique id
+        url: avatarUpload.secure_url,
+        public_id: avatarUpload.public_id,
       },
       address: address,
       phoneNumber: phoneNumber,
