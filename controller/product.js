@@ -8,6 +8,10 @@ import upload from '../utils/multer.js';
 import catchAsync from '../middlewares/catchAsyncError.js';
 import Order from '../models/order.js';
 import { isAdminAuthenticated, isAuthenticated, isSellerAuthenticated } from '../middlewares/auth.js';
+import {
+    getCloudinaryPublicId,
+    validateProductPayload,
+} from '../utils/validateCatalog.js';
 const productRouter = express.Router();
 
 // create product
@@ -21,21 +25,43 @@ productRouter.post(
             const shop = await Shop.findById(shopId);
             if (!shop) {
                 return next(new ErrorHandler("Shop not found with this id", 400));
-            } else {
-                const files = req.files;
-                const imageUrls = await Promise.all(files.map(file => { return new Promise((resolve, reject) => { cloudinary.v2.uploader.upload_stream({ folder: "products" }, (error, result) => { if (error) reject(error); else resolve(result.secure_url); }).end(file.buffer); }); }));
-                const productData = req.body;
-                productData.images = imageUrls;
-                productData.shop = shop;
-                const product = await Product.create(productData);
-                res.status(201).json({
-                    success: true,
-                    product,
-                });
             }
 
+            const files = req.files;
+            const { discountPrice, stock, originalPrice } = validateProductPayload(req.body, files);
+
+            const imageUrls = await Promise.all(
+                files.map((file) =>
+                    new Promise((resolve, reject) => {
+                        cloudinary.v2.uploader
+                            .upload_stream({ folder: "products" }, (error, result) => {
+                                if (error) reject(error);
+                                else resolve(result.secure_url);
+                            })
+                            .end(file.buffer);
+                    })
+                )
+            );
+
+            const product = await Product.create({
+                name: req.body.name,
+                description: req.body.description,
+                category: req.body.category,
+                tags: req.body.tags,
+                originalPrice,
+                discountPrice,
+                stock,
+                images: imageUrls,
+                shopId,
+                shop,
+            });
+
+            res.status(201).json({
+                success: true,
+                product,
+            });
         } catch (error) {
-            return next(new ErrorHandler(error.message, 500));
+            return next(new ErrorHandler(error.message, error.statusCode || 500));
         }
     }))
 
@@ -80,13 +106,23 @@ productRouter.delete("/delete-shop-product/:id", isSellerAuthenticated, catchAsy
             return next(new ErrorHandler("Product not found with this id", 404));
         }
 
+        if (productData.shopId !== req.seller._id.toString()) {
+            return next(new ErrorHandler("You are not allowed to delete this product", 403));
+        }
+
+        if (productData.shopId !== req.seller._id.toString()) {
+            return next(new ErrorHandler("You are not allowed to delete this product", 403));
+        }
+
+        if (productData.shopId !== req.seller._id.toString()) {
+            return next(new ErrorHandler("You are not allowed to delete this product", 403));
+        }
+
         for (let i = 0; i < productData.images.length; i++) {
-            const imageUrl = productData.images[i];
-            const urlParts = imageUrl.split('/');
-            const filenameExt = urlParts[urlParts.length - 1]; // "filename.jpg"
-            const filename = filenameExt.split('.')[0];
-            const publicId = `products/${filename}`;
-            await cloudinary.v2.uploader.destroy(publicId);
+            const publicId = getCloudinaryPublicId(productData.images[i]);
+            if (publicId) {
+                await cloudinary.v2.uploader.destroy(publicId);
+            }
         }
 
         await Product.findByIdAndDelete(productId);
