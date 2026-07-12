@@ -203,8 +203,8 @@ userRouter.put("/update-user-info", isAuthenticated, catchAsync(async(req, res, 
 userRouter.put("/update-avatar", isAuthenticated, catchAsync(async (req, res, next) => {
   try {
     let existsUser = await User.findById(req.user.id);
-    if(req.body.avatar !== ""){
-      const imageId = existsUser.avatar.public_id;
+    if(req.body.avatar){
+      const imageId = existsUser.avatar?.public_id;
       await cloudinary.v2.uploader.destroy(imageId);
 
 

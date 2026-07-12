@@ -32,8 +32,10 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Seller-Authorization"],
 }));
 
-app.use(express.json()); // automatically parse JSON bodies into req.body
-app.use(express.urlencoded({ extended: true })); // parse URL-encoded bodies
+// app.use(express.json()); // automatically parse JSON bodies into req.body
+// app.use(express.urlencoded({ extended: true })); // parse URL-encoded bodies
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 app.use("/", express.static("uploads"));
