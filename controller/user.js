@@ -167,11 +167,20 @@ userRouter.put("/update-user-info", isAuthenticated, catchAsync(async(req, res, 
   try {
     const {email, password, phoneNumber, name } = req.body;
 
-    const user = await User.findOne({email}).select("+password");
+    const user = await User.findById(req.user.id).select("+password");
 
     if(!user){
       return next(new ErrorHandler("User not found", 400));
 
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (
+      existingUser &&
+      existingUser._id.toString() !== user._id.toString()
+    ) {
+      return next(new ErrorHandler("Email already in use", 400));
     }
 
     const isPasswordValid = await user.comparePassword(password);
@@ -188,7 +197,7 @@ userRouter.put("/update-user-info", isAuthenticated, catchAsync(async(req, res, 
 
     await user.save();
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       user,
     })
@@ -200,31 +209,37 @@ userRouter.put("/update-user-info", isAuthenticated, catchAsync(async(req, res, 
 
 
 // update user avatar
-userRouter.put("/update-avatar", isAuthenticated, catchAsync(async (req, res, next) => {
+userRouter.put("/update-avatar", isAuthenticated, upload.single("avatar"), catchAsync(async (req, res, next) => {
   try {
     let existsUser = await User.findById(req.user.id);
-    if(req.body.avatar){
-      const imageId = existsUser.avatar?.public_id;
-      await cloudinary.v2.uploader.destroy(imageId);
 
-
-      const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-        folder: "avatars",
-        width: 150,
-      })
-
-      existsUser.avatar = {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      };
-
-      await existsUser.save();
-
-      res.status(200).json({
-        success: true,
-        user:existsUser
-      })
+    if(!existsUser){
+      return next(new ErrorHandler("User not found", 400));
     }
+
+    if(!req.file){
+      return next(new ErrorHandler("Avatar file is required", 400));
+    }
+
+    const imageId = existsUser.avatar?.public_id;
+    if (imageId) {
+      await cloudinary.v2.uploader.destroy(imageId);
+    }
+
+
+    const myCloud = await uploadAvatarToCloudinary(req.file);
+
+    existsUser.avatar = {
+      public_id: myCloud.public_id,
+      url: myCloud.secure_url,
+    };
+
+    await existsUser.save();
+
+    res.status(200).json({
+      success: true,
+      user:existsUser
+    })
   } catch (error) {
     return next(new ErrorHandler(error.message, 500));
   }
