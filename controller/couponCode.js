@@ -7,6 +7,7 @@ import catchAsync from '../middlewares/catchAsyncError.js';
 import { isSellerAuthenticated } from '../middlewares/auth.js';
 import CouponCode from '../models/couponCode.js';
 
+
 const couponCodeRouter = express.Router();
 
 // create Coupon code
@@ -35,23 +36,23 @@ couponCodeRouter.post("/create-Coupon-code", isSellerAuthenticated, catchAsync(a
 }))
 
 // // get all Coupon codes of a shop
-// couponCodeRouter.get("/get-coupon/:id", isSellerAuthenticated, catchAsync(async (req, res, next) => {
-//     try {
-//         // const shop = await Shop.findOne({ seller: req.seller._id });
-//         const couponCodes = await CouponCode.find({
-//             shopId: {
-//                 _id: req.params.id
-//             }
-//         });
+couponCodeRouter.get("/get-coupon/:id", isSellerAuthenticated, catchAsync(async (req, res, next) => {
+    try {
+        // const shop = await Shop.findOne({ seller: req.seller._id });
+        const couponCodes = await CouponCode.find({
+            shopId: {
+                _id: req.params.id
+            }
+        });
 
-//         res.status(201).json({
-//             success: true,
-//             couponCodes
-//         })
-//     } catch (error) {
-//         return next(new ErrorHandler(error, 400))
-//     }
-// }))
+        res.status(201).json({
+            success: true,
+            couponCodes
+        })
+    } catch (error) {
+        return next(new ErrorHandler(error, 400))
+    }
+}))
 
 //delete coupon code
 couponCodeRouter.delete("/delete-coupon/:id", isSellerAuthenticated, catchAsync(async (req, res, next) => {

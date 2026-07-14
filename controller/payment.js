@@ -18,6 +18,7 @@ paymentRouter.post("/process", catchAsync(async (req, res, next) => {
         message: "Invalid payment amount.",
       });
     }
+    
 
     const myPayment = await stripe.paymentIntents.create({
       amount,
